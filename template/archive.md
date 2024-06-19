@@ -6,6 +6,10 @@
 
 {searches}
 
+## 抖音社会热榜
+
+{social_searches}
+
 ## 明星榜
 
 {stars}
