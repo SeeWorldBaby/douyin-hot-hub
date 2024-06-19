@@ -9,7 +9,7 @@ from douyin import Douyin
 from util import logger
 
 
-def generate_archive_md(searches, stars, lives, musics, brands):
+def generate_archive_md(searches, stars, lives, musics, brands, social_searches):
     """生成今日readme
     """
     def search(item):
@@ -50,6 +50,10 @@ def generate_archive_md(searches, stars, lives, musics, brands):
     searchMd = '暂无数据'
     if searches:
         searchMd = '\n'.join([search(item) for item in searches])
+
+    social_searchMd = '暂无数据'
+    if social_searches:
+        social_searchMd = '\n'.join([search(item) for item in social_searches])
 
     starMd = '暂无数据'
     if stars:
@@ -75,6 +79,7 @@ def generate_archive_md(searches, stars, lives, musics, brands):
     now = util.current_time()
     readme = readme.replace("{updateTime}", now)
     readme = readme.replace("{searches}", searchMd)
+    readme = readme.replace("{social_searches}", social_searchMd)
     readme = readme.replace("{stars}", starMd)
     readme = readme.replace("{lives}", liveMd)
     readme = readme.replace("{musics}", musicMd)
@@ -83,7 +88,7 @@ def generate_archive_md(searches, stars, lives, musics, brands):
     return readme
 
 
-def generate_readme(searches, stars, lives, musics, brands, seven_day_searches, thirty_day_searches):
+def generate_readme(searches, stars, lives, musics, brands, seven_day_searches, thirty_day_searches, social_searches, seven_day_social_searches, thirty_day_social_searches):
     """生成今日readme
     """
     def search(item):
@@ -125,13 +130,25 @@ def generate_readme(searches, stars, lives, musics, brands, seven_day_searches, 
     if searches:
         searchMd = '\n'.join([search(item) for item in searches])
 
+    social_searchMd = '暂无数据'
+    if social_searches:
+        social_searchMd = '\n'.join([search(item) for item in social_searches])
+
     seven_day_searchMd = '暂无数据'
     if seven_day_searches:
         seven_day_searchMd = '\n'.join([search(item) for item in seven_day_searches])
 
+    seven_day_social_searchMd = '暂无数据'
+    if seven_day_social_searches:
+        seven_day_social_searchMd = '\n'.join([search(item) for item in seven_day_social_searches])
+
     thirty_day_searchMd = '暂无数据'
     if thirty_day_searches:
         thirty_day_searchMd = '\n'.join([search(item) for item in thirty_day_searches])
+
+    thirty_day_social_searchMd = '暂无数据'
+    if thirty_day_social_searches:
+        thirty_day_social_searchMd = '\n'.join([search(item) for item in thirty_day_social_searches])
 
     starMd = '暂无数据'
     if stars:
@@ -157,8 +174,13 @@ def generate_readme(searches, stars, lives, musics, brands, seven_day_searches, 
     now = util.current_time()
     readme = readme.replace("{updateTime}", now)
     readme = readme.replace("{searches}", searchMd)
+    readme = readme.replace("{social_searches}", social_searchMd)
     readme = readme.replace("{seven_day_searches}", seven_day_searchMd)
+    readme = readme.replace("{seven_day_social_searches}", seven_day_social_searchMd)
+
     readme = readme.replace("{thirty_day_searches}", thirty_day_searchMd)
+    readme = readme.replace("{thirty_day_social_searches}", thirty_day_social_searchMd)
+
     readme = readme.replace("{stars}", starMd)
     readme = readme.replace("{lives}", liveMd)
     readme = readme.replace("{musics}", musicMd)
@@ -269,11 +291,11 @@ def get_all_brands(dy: Douyin):
 
     return brand_map
 
-def get_history_search(days):
+def get_history_search(days, search_name):
     history_searches = []
     for i in range(days):
         offset_day = datetime.datetime.now().date() - datetime.timedelta(days=i)
-        raw_data_path = f'raw/{str(offset_day)}/hot-search.json'
+        raw_data_path = f'raw/{str(offset_day)}/{search_name}.json'
         if not os.path.exists(raw_data_path):
             continue
         with open(raw_data_path) as f:
@@ -300,17 +322,31 @@ def get_history_search(days):
 def run():
     # 获取数据
     dy = Douyin()
+
+    #社会热搜
+    social_searches, social_resp = dy.get_hot_social_search()
+    save_raw_response(social_resp, 'social-search')
+    time.sleep(1)
+
+    # 7天社会热搜
+    seven_day_social_searches = get_history_search(7, 'social-search')
+    seven_day_social_searches = seven_day_social_searches[:min(200, len(seven_day_social_searches))]
+
+    # 30天社会热搜
+    thirty_day_social_searches = get_history_search(30, 'social-search')
+    thirty_day_social_searches = thirty_day_social_searches[:min(200, len(thirty_day_social_searches))]
+
     # 热搜
     searches, resp = dy.get_hot_search()
     save_raw_response(resp, 'hot-search')
     time.sleep(1)
 
     # 7天热搜
-    seven_day_searches = get_history_search(7)
+    seven_day_searches = get_history_search(7, 'hot-search')
     seven_day_searches = seven_day_searches[:min(200, len(seven_day_searches))]
 
     # 30天热搜
-    thirty_day_searches = get_history_search(30)
+    thirty_day_searches = get_history_search(30, 'hot-search')
     thirty_day_searches = thirty_day_searches[:min(200, len(thirty_day_searches))]
 
     # 明星
@@ -330,10 +366,10 @@ def run():
     time.sleep(1)
 
     # 最新数据
-    todayMd = generate_readme(searches, stars, lives, musics, brands, seven_day_searches, thirty_day_searches)
+    todayMd = generate_readme(searches, stars, lives, musics, brands, seven_day_searches, thirty_day_searches, social_searches, seven_day_social_searches, thirty_day_social_searches)
     save_readme(todayMd)
     # 归档
-    archiveMd = generate_archive_md(searches, stars, lives, musics, brands)
+    archiveMd = generate_archive_md(searches, stars, lives, musics, brands, social_searches)
     save_archive_md(archiveMd)
 
 
