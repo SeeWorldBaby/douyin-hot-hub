@@ -284,8 +284,8 @@ def get_history_search(days):
 
     word_set = set()
     filter_list = []
-    # sorted_list = sorted(history_searches, key=lambda x: x['hot_value'], reverse=True)
-    sorted_list = sorted(history_searches, key=lambda x: x['view_count'], reverse=True)
+    sorted_list = sorted(history_searches, key=lambda x: x['hot_value'], reverse=True)
+    # sorted_list = sorted(history_searches, key=lambda x: x['view_count'], reverse=True)
 
     for word_item in sorted_list:
         word = word_item['word']
