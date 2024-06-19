@@ -4,7 +4,7 @@ import urllib
 
 from requests import Response
 
-import util
+import util, datetime, json
 from douyin import Douyin
 from util import logger
 
@@ -83,7 +83,7 @@ def generate_archive_md(searches, stars, lives, musics, brands):
     return readme
 
 
-def generate_readme(searches, stars, lives, musics, brands):
+def generate_readme(searches, stars, lives, musics, brands, seven_day_searches, thirty_day_searches):
     """生成今日readme
     """
     def search(item):
@@ -125,6 +125,14 @@ def generate_readme(searches, stars, lives, musics, brands):
     if searches:
         searchMd = '\n'.join([search(item) for item in searches])
 
+    seven_day_searchMd = '暂无数据'
+    if seven_day_searches:
+        seven_day_searchMd = '\n'.join([search(item) for item in seven_day_searches])
+
+    thirty_day_searchMd = '暂无数据'
+    if thirty_day_searches:
+        thirty_day_searchMd = '\n'.join([search(item) for item in thirty_day_searches])
+
     starMd = '暂无数据'
     if stars:
         starMd = '\n'.join([star(item) for item in stars])
@@ -149,6 +157,8 @@ def generate_readme(searches, stars, lives, musics, brands):
     now = util.current_time()
     readme = readme.replace("{updateTime}", now)
     readme = readme.replace("{searches}", searchMd)
+    readme = readme.replace("{seven_day_searches}", seven_day_searchMd)
+    readme = readme.replace("{thirty_day_searches}", thirty_day_searchMd)
     readme = readme.replace("{stars}", starMd)
     readme = readme.replace("{lives}", liveMd)
     readme = readme.replace("{musics}", musicMd)
@@ -259,6 +269,33 @@ def get_all_brands(dy: Douyin):
 
     return brand_map
 
+def get_history_search(days):
+    history_searches = []
+    for i in range(days):
+        offset_day = datetime.datetime.now().date() - datetime.timedelta(days=i)
+        raw_data_path = f'raw/{str(offset_day)}/hot-search.json'
+        if not os.path.exists(raw_data_path):
+            continue
+        with open(raw_data_path) as f:
+            search_data = json.loads(f.read())
+            word_list = search_data['data']['word_list']
+
+            history_searches = history_searches + word_list
+
+    word_set = set()
+    filter_list = []
+    # sorted_list = sorted(history_searches, key=lambda x: x['hot_value'], reverse=True)
+    sorted_list = sorted(history_searches, key=lambda x: x['view_count'], reverse=True)
+
+    for word_item in sorted_list:
+        word = word_item['word']
+        if word in word_set:
+            continue
+        word_set.add(word)
+        filter_list.append(word_item)
+
+    return sorted_list
+
 
 def run():
     # 获取数据
@@ -267,6 +304,15 @@ def run():
     searches, resp = dy.get_hot_search()
     save_raw_response(resp, 'hot-search')
     time.sleep(1)
+
+    # 7天热搜
+    seven_day_searches = get_history_search(7)
+    seven_day_searches = seven_day_searches[:min(200, len(seven_day_searches))]
+
+    # 30天热搜
+    thirty_day_searches = get_history_search(30)
+    thirty_day_searches = thirty_day_searches[:min(200, len(thirty_day_searches))]
+
     # 明星
     stars, resp = dy.get_hot_star()
     save_raw_response(resp, 'hot-star')
@@ -284,7 +330,7 @@ def run():
     time.sleep(1)
 
     # 最新数据
-    todayMd = generate_readme(searches, stars, lives, musics, brands)
+    todayMd = generate_readme(searches, stars, lives, musics, brands, seven_day_searches, thirty_day_searches)
     save_readme(todayMd)
     # 归档
     archiveMd = generate_archive_md(searches, stars, lives, musics, brands)
