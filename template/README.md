@@ -17,6 +17,26 @@
 
 {searches}
 
+## 抖音社会热榜
+
+{social_searches}
+
+## 抖音7天热榜
+
+{seven_day_searches}
+
+## 抖音7天社会热榜
+
+{seven_day_social_searches}
+
+## 抖音30天热榜
+
+{thirty_day_searches}
+
+## 抖音30天社会热榜
+
+{thirty_day_social_searches}
+
 ## 明星榜
 
 {stars}
