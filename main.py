@@ -316,7 +316,7 @@ def get_history_search(days, search_name):
         word_set.add(word)
         filter_list.append(word_item)
 
-    return sorted_list
+    return filter_list
 
 
 def run():
