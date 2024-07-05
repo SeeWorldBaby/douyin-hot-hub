@@ -292,30 +292,34 @@ def get_all_brands(dy: Douyin):
     return brand_map
 
 def get_history_search(days, search_name):
-    history_searches = []
-    for i in range(days):
-        offset_day = datetime.datetime.now().date() - datetime.timedelta(days=i)
-        raw_data_path = f'raw/{str(offset_day)}/{search_name}.json'
-        if not os.path.exists(raw_data_path):
-            continue
-        with open(raw_data_path) as f:
-            search_data = json.loads(f.read())
-            word_list = search_data['data']['word_list']
-
-            history_searches = history_searches + word_list
-
-    word_set = set()
     filter_list = []
-    sorted_list = sorted(history_searches, key=lambda x: x['hot_value'], reverse=True)
-    # sorted_list = sorted(history_searches, key=lambda x: x['view_count'], reverse=True)
+    try:
+        history_searches = []
+        for i in range(days):
+            offset_day = datetime.datetime.now().date() - datetime.timedelta(days=i)
+            raw_data_path = f'raw/{str(offset_day)}/{search_name}.json'
+            if not os.path.exists(raw_data_path):
+                continue
+            with open(raw_data_path) as f:
+                search_data = json.loads(f.read())
+                word_list = search_data['data']['word_list']
 
-    for word_item in sorted_list:
-        word = word_item['word']
-        if word in word_set:
-            continue
-        word_set.add(word)
-        filter_list.append(word_item)
+                history_searches = history_searches + word_list
 
+        word_set = set()
+        sorted_list = sorted(history_searches, key=lambda x: x['hot_value'], reverse=True)
+        # sorted_list = sorted(history_searches, key=lambda x: x['view_count'], reverse=True)
+
+        for word_item in sorted_list:
+            word = word_item['word']
+            if word in word_set:
+                continue
+            word_set.add(word)
+            filter_list.append(word_item)
+
+        return filter_list
+    except:
+        logger.exception(f"get_history_search failed, days={days}, search_name={search_name}")
     return filter_list
 
 
